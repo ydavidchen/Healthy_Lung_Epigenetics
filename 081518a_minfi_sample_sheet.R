@@ -26,9 +26,11 @@ Main <- function() {
   
   ## Join & reformat based on minfi requirement:
   sampSheet <- merge(arrayInfo, patientInfo, by="SAMPLE_ID");
-  colnames(sampSheet) <- gsub("SAMPLE_NAME", "Sample_Name", colnames(sampSheet), ignore.case=FALSE);
+  colnames(sampSheet) <- gsub("SAMPLE_NAME", "Subject", colnames(sampSheet), ignore.case=FALSE);
   colnames(sampSheet) <- gsub("SAMPLE_ID", "Sample_ID", colnames(sampSheet), ignore.case=FALSE);
   colnames(sampSheet) <- gsub("Bead_chip__", "Bead_Chip", colnames(sampSheet));
+  sampSheet$Sample_Name <- paste(sampSheet$Subject, sampSheet$LOBE, sep="_");
+  sampSheet$Sample_Name <- gsub("-", "", sampSheet$Sample_Name, fixed=TRUE);
   
   ## Export:
   write.csv(sampSheet, "../IDAT_FILES/081518_minfi_sample_sheet.csv", row.names=FALSE, quote=FALSE);

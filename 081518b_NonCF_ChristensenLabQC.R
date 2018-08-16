@@ -11,9 +11,9 @@ library(minfi);
 
 ## User variables:
 IDAT_DIR <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/IDAT_FILES/";
-OUTPUT_DIR <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/NonCF_EPIC_QC";
+OUTPUT_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/NonCF_EPIC_QC";
 DET_P <- 0.000001; #ENmix default
-SAMP_FRACTION <- 0.10;
+SAMP_FRACTION <- 0.20;
 DPI <- 200;
 
 ## Pipelines & helper functions:
@@ -28,7 +28,7 @@ ChristensenLabMethArrayQCs <- function(rgSet, detP, sampThresh, dpi, outputPath,
   #'@param usedFFPE Boolean indicating whether FFPE Restoration Control should be saved as a plot
   
   if(getwd() != outputPath) setwd(outputPath);
-  print(paste("Current working directory is:", getwd()));
+  print(paste("Current working directory has been set to:", getwd()));
   
   ## 1) Plot ENmix control plots:
   ENmix::plotCtrl(rgSet);
@@ -111,11 +111,11 @@ extractMethMatrix <- function(genomRatSet, what=c("beta","M"), targets=NULL) {
     methMat <- minfi::getM(genomRatSet); 
   }
   
-  ## Map array barcode to sample ID:
+  ## Map array barcode to Tube number:
   if(! is.null(targets) & ! any(is.na(targets$Sample_Name)) ) {
-    if(identical(colnames(methMat), targets$Complete_Barcode)) {
+    if(identical(colnames(methMat), targets$Complete_Barcode) & ! all(duplicated(targets$Sample_Name)) ) {
       print("Switching barcode to sample ID based on minfi sample sheet...");
-      colnames(methMat) <- targets$Sample_Name;
+      colnames(methMat) <- targets$Sample_Name; #need to be unique
     } else {
       stop("Sample barcode must be matched before ID conversion!");
     }
@@ -124,16 +124,26 @@ extractMethMatrix <- function(genomRatSet, what=c("beta","M"), targets=NULL) {
   return(methMat); 
 }
 
-## Execute pipelines as a single program:
-## Edit main as necessary:
+## Execute pipelines as a single program **EDIT AS NEEDED**
+## Alternatively, run commands in `Main` line by line
 Main <- function() {
+  #------------------------------------Step 1. Load IDAT files as a RGChannelSet------------------------------------
+  setwd(IDAT_DIR);
+  targets <- read.metharray.sheet(getwd());
+  
   rgSet <- read.metharray.exp(targets=targets, extended=TRUE);
   print(rgSet@annotation);
   
+  #------------------------------------Step 2. Execute custom sets of QCs (minfi & ENmix)------------------------------------
   qc <- ChristensenLabMethArrayQCs(rgSet, detP=DET_P, sampThresh=SAMP_FRACTION, dpi=DPI, outputPath=OUTPUT_PATH, what2Return="ENmix", usedFFPE=FALSE);
-  print("Total number of bad samples:"); 
-  print(length(qc$badsample)); 
+  print( paste("Total number of bad samples:", length(qc$badsample)) );
+  save(list=c("rgSet","targets", "qc"), file="../081518_NonCF_BAL_raw_rgSet_and_qc.RData", compress=TRUE); #saved for future queries:
   
+  ## Plot ENmix overall intensity:
+  png("ENmix_overall_intensities.png", height=8.27, width=11.69, units="in", res=DPI);
+  par(mar=c(10.5,4,4,2));
+  barplot(qc$bisul, las=2, border=NA, ylab="Intensity", cex.names=0.75, main="Total Intensities by Sample, Before Preprocessing");
+  dev.off();
   
   #------------------------------------Step 3. Basic raw-data exploration------------------------------------
   if(getwd() != OUTPUT_PATH) setwd(OUTPUT_PATH);
@@ -141,38 +151,38 @@ Main <- function() {
   ## Raw methylation density curves: 
   png("minfi_raw_densityCurves.png", height=8.27, width=11.69, units="in", res=DPI);
   par(mar=c(5,4,4,2));
-  densityPlot(rgSet, main="Raw beta-value densities", sampGroups=targets$ENmixClassif);
+  densityPlot(rgSet, main="Raw beta-value densities", sampGroups=targets$Bead_Chip);
   dev.off();
   
   png("minfi_raw_beanPlots.png", height=15, width=11.69, units="in", res=DPI);
   par(mar=c(5,10.5,4,2));
-  densityBeanPlot(rgSet, main="Raw beta-value densities by sample", sampNames=targets$Sample_Name, sampGroups=targets$ENmixClassif);
+  densityBeanPlot(rgSet, main="Raw beta-value densities by sample", sampNames=targets$Sample_Name, sampGroups=targets$Bead_Chip);
   dev.off();
   
   #------------------------------------Step 4. Run the customized minfi pipeline------------------------------------
   normalizedEPIC <- ChristensenLabMinfiAdoption(rgSet, detP=DET_P, sampThresh=SAMP_FRACTION);
   allHealthyBetas <- extractMethMatrix(normalizedEPIC, what="beta", targets=targets); #use original target file for barcode-name mapping
+  # save(list=c("allHealthyBetas","targets"), file="../081518_NonCF_betas.RData", compress=TRUE);
   
-  #------------------------------------Step 5. Plot final distribution & save------------------------------------
+  #------------------------------------Step 5. Plot final distributions & save------------------------------------
   ## MDS plots:
   png("minfi_mdsPlotPanels_after_normalization.png", height=11.69, width=11.69, units="in", res=DPI);
-  par(mfrow=c(2,3), mar=c(5,4,4,2));
+  par(mfrow=c(2,2), mar=c(5,4,4,2));
   for(nCpGs in c(1e3, 1e4)) {
     mdsPlot(allHealthyBetas, numPositions=nCpGs, sampGroups=targets$Bead_Chip);
     mdsPlot(allHealthyBetas, numPositions=nCpGs, sampGroups=targets$LOBE);
-    mdsPlot(allHealthyBetas, numPositions=nCpGs, sampGroups=targets$subjectMatch);
   }
   dev.off();
   
   ## Methylation density plot:
   png("minfi_processed_density_curves_by_ENmix.png", height=8.27, width=11.69, units="in", res=DPI);
   par(mar=c(5,4,4,2));
-  densityPlot(cohort2_betas, main="Processed Beta-value Densities", sampGroups=targets$Bead_Chip);
+  densityPlot(allHealthyBetas, main="Processed Beta-value Densities", sampGroups=targets$Bead_Chip);
   dev.off();
   
   png("minfi_processed_beanPlots_by_ENmix.png", height=15, width=11.69, units="in", res=DPI);
   par(mar=c(5,10.5,4,2));
-  densityBeanPlot(cohort2_betas, main="Processed Densities by Sample", sampGroups=targets$Bead_Chip);
+  densityBeanPlot(allHealthyBetas, main="Processed Densities by Sample", sampGroups=targets$Bead_Chip);
   dev.off();
 }
 
