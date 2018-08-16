@@ -1,0 +1,179 @@
+# Functional Implementation of Christensen Lab Minfi & ENmix QC
+# Script author: David Chen
+# Date: 08/15/2018
+# Notes:
+
+rm(list=ls());
+library(doParallel); registerDoParallel(detectCores() - 1);
+library(ENmix);
+library(matrixStats);
+library(minfi);
+
+## User variables:
+IDAT_DIR <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/IDAT_FILES/";
+OUTPUT_DIR <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/NonCF_EPIC_QC";
+DET_P <- 0.000001; #ENmix default
+SAMP_FRACTION <- 0.10;
+DPI <- 200;
+
+## Pipelines & helper functions:
+ChristensenLabMethArrayQCs <- function(rgSet, detP, sampThresh, dpi, outputPath, what2Return=c("ENmix","minfi"), usedFFPE=TRUE) {
+  #'@description Phase 1 of 3: Run a set of existing MethylationEPIC QC pipelines
+  #'@param rgSet RGChannelSet object of IDATs loaded by minfi
+  #'@param detP Min detection P-value
+  #'@param sampThresh Max proportion of samples allowing to exceed detection P
+  #'@param dpi png figure resolution passed into `png` function
+  #'@param outputPath Path to the output directory
+  #'@param what2Return User choice of minfi or ENmix object to return
+  #'@param usedFFPE Boolean indicating whether FFPE Restoration Control should be saved as a plot
+  
+  if(getwd() != outputPath) setwd(outputPath);
+  print(paste("Current working directory is:", getwd()));
+  
+  ## 1) Plot ENmix control plots:
+  ENmix::plotCtrl(rgSet);
+  
+  ## 2) Run ENmix QC: 
+  qc <- ENmix::QCinfo(rgSet, detPthre=detP, samplethre=sampThresh);
+  
+  ## 3) Generate minfi QC report:
+  minfi::qcReport(rgSet=rgSet, pdf="minfi_QC_report.pdf");
+  
+  ## 4) minfi identification of outliers based on meth & unmeth intensities
+  Mset <- minfi::preprocessRaw(rgSet);
+  Mset <- minfi::minfiQC(Mset, fixOutliers=TRUE, verbose=TRUE);
+  png("minfi_OutliersByIntensity.png", height=8.27, width=11.69, units="in", res=dpi);
+  minfi::plotQC(Mset$qc);
+  title("Poor-performing Outlier Identification");
+  dev.off();
+  
+  ## 6) Plot FFPE restoration probe:
+  if(usedFFPE) {
+    png("minfi_FFPEcontrol.png", height=8.27, width=11.69, units="in", res=dpi);
+    controlStripPlot(rgSet, controls=c("RESTORATION"));
+    dev.off();
+  }
+  
+  if(what2Return == "ENmix") { 
+    return(qc);
+  } else if(what2Return == "minfi") {
+    return(Mset);
+  }
+}
+
+ChristensenLabMinfiAdoption <- function(rgSet, detP, sampThresh) {
+  #'@description Phase 2 of 3: Executes minfi preprocessing by the Funnorm approach & excludes
+  #'@param rgSet RGChannelSet object of IDATs loaded by minfi
+  #'@param detP Detection P-value threshold
+  #'@param sampThresh Max proportion of samples allowed to fail detection P. Defaults to 20%
+  
+  ## Step 1. Executes Funnorm  & methylumi.noob background correction:
+  genomRatSet <- preprocessFunnorm(rgSet);
+  print(genomRatSet); 
+  
+  ## Step 2. Remove probes with low-call rate:
+  print(paste(c("Detection P-value:","Sample threshold:"), c(detP, sampThresh))); 
+  
+  pvals <- detectionP(rgSet);
+  failedP <- (pvals > detP); 
+  
+  print("Number of CpGs w/ failed P-values:");
+  print(sum(failedP)); 
+  
+  print("Proportion of CpGs w/ failed P-values:");
+  print(mean(failedP)); 
+  
+  print(paste("Number of CpGs w/ failed P-values in >", sampThresh, "of samples"));
+  print(sum(rowMeans(failedP) > sampThresh)); 
+  
+  print(paste("Proportion of CpGs w/ failed P-values in >", sampThresh, "of samples"));
+  print(mean(rowMeans(failedP) > sampThresh)); 
+  
+  failedProbes <- rownames(failedP)[rowMeans(failedP) > sampThresh];
+  genomRatSet <- genomRatSet[! rownames(genomRatSet) %in% failedProbes];
+  
+  ## Step 3. Remove non-CpGs, control SNP probes, and polymorphic SNP probes:
+  genomRatSet <- dropMethylationLoci(genomRatSet); #drop technical probes
+  genomRatSet <- dropLociWithSnps(genomRatSet); #drop SNPs w/ default MAF=0
+  
+  return(genomRatSet);
+}
+
+extractMethMatrix <- function(genomRatSet, what=c("beta","M"), targets=NULL) {
+  #'@description Phase 3 of 3: Extract beta-values from processed DNAm minfi object
+  #'@param genomRatSet GRChannelSet minfi object
+  #'@param what Methylation data type
+  #'@param targets Optional data.frame for barcode-to-sample name conversion. A SAMPLE_NAME column needed.
+  
+  if(what == "beta") {
+    methMat <- minfi::getBeta(genomRatSet); 
+  } else if(what == "M") {
+    methMat <- minfi::getM(genomRatSet); 
+  }
+  
+  ## Map array barcode to sample ID:
+  if(! is.null(targets) & ! any(is.na(targets$Sample_Name)) ) {
+    if(identical(colnames(methMat), targets$Complete_Barcode)) {
+      print("Switching barcode to sample ID based on minfi sample sheet...");
+      colnames(methMat) <- targets$Sample_Name;
+    } else {
+      stop("Sample barcode must be matched before ID conversion!");
+    }
+  }
+  
+  return(methMat); 
+}
+
+## Execute pipelines as a single program:
+## Edit main as necessary:
+Main <- function() {
+  rgSet <- read.metharray.exp(targets=targets, extended=TRUE);
+  print(rgSet@annotation);
+  
+  qc <- ChristensenLabMethArrayQCs(rgSet, detP=DET_P, sampThresh=SAMP_FRACTION, dpi=DPI, outputPath=OUTPUT_PATH, what2Return="ENmix", usedFFPE=FALSE);
+  print("Total number of bad samples:"); 
+  print(length(qc$badsample)); 
+  
+  
+  #------------------------------------Step 3. Basic raw-data exploration------------------------------------
+  if(getwd() != OUTPUT_PATH) setwd(OUTPUT_PATH);
+  
+  ## Raw methylation density curves: 
+  png("minfi_raw_densityCurves.png", height=8.27, width=11.69, units="in", res=DPI);
+  par(mar=c(5,4,4,2));
+  densityPlot(rgSet, main="Raw beta-value densities", sampGroups=targets$ENmixClassif);
+  dev.off();
+  
+  png("minfi_raw_beanPlots.png", height=15, width=11.69, units="in", res=DPI);
+  par(mar=c(5,10.5,4,2));
+  densityBeanPlot(rgSet, main="Raw beta-value densities by sample", sampNames=targets$Sample_Name, sampGroups=targets$ENmixClassif);
+  dev.off();
+  
+  #------------------------------------Step 4. Run the customized minfi pipeline------------------------------------
+  normalizedEPIC <- ChristensenLabMinfiAdoption(rgSet, detP=DET_P, sampThresh=SAMP_FRACTION);
+  allHealthyBetas <- extractMethMatrix(normalizedEPIC, what="beta", targets=targets); #use original target file for barcode-name mapping
+  
+  #------------------------------------Step 5. Plot final distribution & save------------------------------------
+  ## MDS plots:
+  png("minfi_mdsPlotPanels_after_normalization.png", height=11.69, width=11.69, units="in", res=DPI);
+  par(mfrow=c(2,3), mar=c(5,4,4,2));
+  for(nCpGs in c(1e3, 1e4)) {
+    mdsPlot(allHealthyBetas, numPositions=nCpGs, sampGroups=targets$Bead_Chip);
+    mdsPlot(allHealthyBetas, numPositions=nCpGs, sampGroups=targets$LOBE);
+    mdsPlot(allHealthyBetas, numPositions=nCpGs, sampGroups=targets$subjectMatch);
+  }
+  dev.off();
+  
+  ## Methylation density plot:
+  png("minfi_processed_density_curves_by_ENmix.png", height=8.27, width=11.69, units="in", res=DPI);
+  par(mar=c(5,4,4,2));
+  densityPlot(cohort2_betas, main="Processed Beta-value Densities", sampGroups=targets$Bead_Chip);
+  dev.off();
+  
+  png("minfi_processed_beanPlots_by_ENmix.png", height=15, width=11.69, units="in", res=DPI);
+  par(mar=c(5,10.5,4,2));
+  densityBeanPlot(cohort2_betas, main="Processed Densities by Sample", sampGroups=targets$Bead_Chip);
+  dev.off();
+}
+
+if(! interactive()) Main(); #executable in command line
