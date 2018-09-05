@@ -11,10 +11,13 @@ library(minfi);
 
 ## User variables:
 IDAT_DIR <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/IDAT_FILES/";
-OUTPUT_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/NonCF_EPIC_QC";
+OUTPUT_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/NonCF_EPIC_QC/082018_Combined_Set_QC";
 DET_P <- 0.000001; #ENmix default
 SAMP_FRACTION <- 0.20;
 DPI <- 200;
+
+if(Sys.getenv("RSTUDIO")=="1") setwd(dirname(rstudioapi::getActiveDocumentContext()$path));
+source("HelperFunctionsForLungEpigen.R");
 
 ## Pipelines & helper functions:
 ChristensenLabMethArrayQCs <- function(rgSet, detP, sampThresh, dpi, outputPath, what2Return=c("ENmix","minfi"), usedFFPE=TRUE) {
@@ -99,11 +102,12 @@ ChristensenLabMinfiAdoption <- function(rgSet, detP, sampThresh) {
   return(genomRatSet);
 }
 
-extractMethMatrix <- function(genomRatSet, what=c("beta","M"), targets=NULL) {
+extractMethMatrix <- function(genomRatSet, what=c("beta","M"), dropXY=FALSE, targets=NULL) {
   #'@description Phase 3 of 3: Extract beta-values from processed DNAm minfi object
   #'@param genomRatSet GRChannelSet minfi object
   #'@param what Methylation data type
-  #'@param targets Optional data.frame for barcode-to-sample name conversion. A SAMPLE_NAME column needed.
+  #'@param dropXY Should probes on chr X & Y be dropped?
+  #'@param targets Optional data.frame for barcode-to-sample name conversion. A SAMPLE_NAME column needed
   
   if(what == "beta") {
     methMat <- minfi::getBeta(genomRatSet); 
@@ -111,7 +115,13 @@ extractMethMatrix <- function(genomRatSet, what=c("beta","M"), targets=NULL) {
     methMat <- minfi::getM(genomRatSet); 
   }
   
-  ## Map array barcode to Tube number:
+  if(dropXY) {
+    print("Dropping chrX & Y probes...");
+    sexProbes <- getXandorYProbes(chroms=c("chrX","chrY"));
+    methMat <- methMat [! rownames(methMat) %in% sexProbes, ];
+  }
+  
+  ## Map array barcode to sample ID:
   if(! is.null(targets) & ! any(is.na(targets$Sample_Name)) ) {
     if(identical(colnames(methMat), targets$Complete_Barcode) & ! all(duplicated(targets$Sample_Name)) ) {
       print("Switching barcode to sample ID based on minfi sample sheet...");
@@ -122,6 +132,14 @@ extractMethMatrix <- function(genomRatSet, what=c("beta","M"), targets=NULL) {
   }
   
   return(methMat); 
+}
+
+getXandorYProbes <- function(chroms=c("chrX","chrY")) {
+  #'@description Helper function to a character vector of CpGs on chr X and/or Y
+  #'@param chroms Chromosomes to drop
+  annot.850kb3 <- loadEPICannotationFile();
+  xyProbes <- annot.850kb3$Name[annot.850kb3$chr %in% chroms]; 
+  return(xyProbes);
 }
 
 ## Execute pipelines as a single program **EDIT AS NEEDED**
@@ -137,7 +155,7 @@ Main <- function() {
   #------------------------------------Step 2. Execute custom sets of QCs (minfi & ENmix)------------------------------------
   qc <- ChristensenLabMethArrayQCs(rgSet, detP=DET_P, sampThresh=SAMP_FRACTION, dpi=DPI, outputPath=OUTPUT_PATH, what2Return="ENmix", usedFFPE=FALSE);
   print( paste("Total number of bad samples:", length(qc$badsample)) );
-  save(list=c("rgSet","targets", "qc"), file="../081518_NonCF_BAL_raw_rgSet_and_qc.RData", compress=TRUE); #saved for future queries:
+  save(list=c("rgSet","targets", "qc"), file="../../081518_NonCF_BAL_raw_rgSet_and_qc.RData", compress=TRUE); #saved for future queries
   
   ## Plot ENmix overall intensity:
   png("ENmix_overall_intensities.png", height=8.27, width=11.69, units="in", res=DPI);
@@ -161,10 +179,11 @@ Main <- function() {
   
   #------------------------------------Step 4. Run the customized minfi pipeline------------------------------------
   normalizedEPIC <- ChristensenLabMinfiAdoption(rgSet, detP=DET_P, sampThresh=SAMP_FRACTION);
-  allHealthyBetas <- extractMethMatrix(normalizedEPIC, what="beta", targets=targets); #use original target file for barcode-name mapping
-  # save(list=c("allHealthyBetas","targets"), file="../081518_NonCF_betas.RData", compress=TRUE);
+  allHealthyBetas <- extractMethMatrix(normalizedEPIC, what="beta", dropXY=TRUE, targets=targets);
   
   #------------------------------------Step 5. Plot final distributions & save------------------------------------
+  save(list=c("allHealthyBetas","targets"), file="../../081518_NonCF_betas.RData", compress=TRUE);
+  
   ## MDS plots:
   png("minfi_mdsPlotPanels_after_normalization.png", height=11.69, width=11.69, units="in", res=DPI);
   par(mfrow=c(2,2), mar=c(5,4,4,2));
@@ -186,4 +205,4 @@ Main <- function() {
   dev.off();
 }
 
-if(! interactive()) Main(); #executable in command line
+if(! interactive()) Main();

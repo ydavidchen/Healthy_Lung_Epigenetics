@@ -1,6 +1,6 @@
 # Assembling minfi sample sheet for QC
 # Script author: David Chen
-# Date: 08/15/2018
+# Date: 08/15/2018; 08/17/2018
 # Notes:
 
 rm(list=ls());
@@ -11,18 +11,15 @@ Main <- function() {
   setwd(COVAR_PATH);
   
   ## Sheet for array:
-  arrayInfo <- read.xls("1506 (Armstrong-Ashare-24).xls", stringsAsFactors=FALSE); #original file
+  arrayInfo <- read.xls("1506(24)+1457(1)_combined.xls", stringsAsFactors=FALSE); #original file
   arrayInfo <- arrayInfo[ , 1:8];
-  arrayInfo$Plate <- NULL; 
-  colnames(arrayInfo) <- gsub(".","_",colnames(arrayInfo),fixed=TRUE);
+  arrayInfo$Plate <- NULL;
+  colnames(arrayInfo) <- gsub(".", "_", colnames(arrayInfo), fixed=TRUE);
   colnames(arrayInfo) <- gsub("Terminus", "Sentrix_position", colnames(arrayInfo));
   
   ## Clinical information:
-  patientInfo <- read.csv("covariates_by_email_24NonCF.csv", stringsAsFactors=FALSE); #assembled from email
-  patientInfo$Sex <- gsub("[0-9]", "", patientInfo$GENDER);
-  patientInfo$subjectMatch <- gsub("[A-Z]", "", patientInfo$GENDER);
-  stopifnot( all(table(patientInfo$Sex) == 12) & all(table(patientInfo$subjectMatch) == 4)); #checkpoint
-  patientInfo$GENDER <- NULL; 
+  patientInfo <- read.csv("covariates_by_email_26NonCF_081718.csv", stringsAsFactors=FALSE); #assembled from email
+  patientInfo$GENDER <- gsub("[0-9]", "", patientInfo$GENDER);
   
   ## Join & reformat based on minfi requirement:
   sampSheet <- merge(arrayInfo, patientInfo, by="SAMPLE_ID");
@@ -33,7 +30,7 @@ Main <- function() {
   sampSheet$Sample_Name <- gsub("-", "", sampSheet$Sample_Name, fixed=TRUE);
   
   ## Export:
-  write.csv(sampSheet, "../IDAT_FILES/081518_minfi_sample_sheet.csv", row.names=FALSE, quote=FALSE);
+  write.csv(sampSheet, "../IDAT_FILES/081718_minfi_sample_sheet.csv", row.names=FALSE, quote=FALSE);
   print("*********************Process Complete!*********************");
 }
 
