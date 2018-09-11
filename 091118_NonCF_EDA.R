@@ -1,7 +1,8 @@
-# Exploratory Data Analysis of Healthy BAL DNAm
+# Exploratory Data Analysis (EDA) of Healthy BAL DNAm
 # Author: David Chen
-# Date: 08/31/2018
+# Last update: 09/11/2018
 # Notes:
+# -- This file is dedicated for EDA and is frequently updated
 
 rm(list=ls());
 library(ggbiplot);
@@ -10,15 +11,15 @@ library(gridExtra);
 library(matrixStats);
 library(pheatmap); 
 library(tableone);
+library(reshape2);
 library(doParallel); registerDoParallel(detectCores()-1);
-
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path));
 source("HelperFunctionsForLungEpigen.R");
 
 DATA_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/"; 
 VAR_THRESH <- 0.01; 
 load(paste0(DATA_PATH, "081518_NonCF_betas.RData"));
-targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_082018.csv"), stringsAsFactors=FALSE);
+targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_090118.csv"), stringsAsFactors=FALSE); #frequently updated file
 
 ## Select most variable CpGs for further exploration:
 k <- decideNumberOfMostVariable(allHealthyBetas, varThresh=VAR_THRESH, plot=TRUE);
@@ -133,3 +134,12 @@ ggscatter(
 ) + myScatterTheme +
   annotate("text", 35, 35, label=label, size=7)
 
+#-----------------------------------------Cell Type Estimation-----------------------------------------
+plt.myOmega <- melt(targets[ , c("Sample_Name","CellType_1","CellType_2","LOBE")]); 
+ggplot(plt.myOmega, aes(x=variable, y=value, color=LOBE)) +
+  geom_boxplot(outlier.colour=NA, outlier.fill=NA, outlier.shape=NA) +
+  geom_point(aes(color=LOBE), position=position_jitterdodge(jitter.width=0.2)) + # add jitter
+  scale_color_manual(values=c("red","blue")) +
+  scale_y_continuous(limits=c(0, 1.05)) +
+  labs(y="Proportion") +
+  myBoxplotTheme;

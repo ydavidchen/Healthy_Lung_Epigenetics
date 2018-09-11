@@ -1,6 +1,6 @@
-# RPMM on Non-CF Samples
+# RPMM on Non-CF Samples and Update Sample Annotations
 # David Chen
-# 08/28/2018
+# 08/20/2018
 # Notes:
 
 rm(list=ls());
