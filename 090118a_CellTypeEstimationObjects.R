@@ -9,15 +9,15 @@
 rm(list=ls());
 library(matrixStats);
 library(RefFreeEWAS);
-# library(doParallel); registerDoParallel(detectCores() - 1); #optional
+library(doParallel); registerDoParallel(detectCores() - 1);
 
 nCpGs <- 1e4;
 K_LIST <- 2:10;
-ITERS <- 25;
-BOOTSTRAP_ITER <- 10; #more may be necessary 
-R <- 1500;
+ITERS <- 10;
+BOOTSTRAP_ITER <- 5; #more may be necessary 
+R <- 500;
 
-setDataPath <- function(verbose=TRUE) {
+setDataPath <- function(verbose=FALSE) {
   #'@description Sets path for previously saved RData file based on operating system
   myMachine <- Sys.info()["sysname"]; 
   if(myMachine == "Darwin") {
@@ -48,7 +48,7 @@ selectMostVariableCpGs <- function(data, k) {
 Main <- function() {
   print("*********************Process Begins*********************");
   
-  DATA_PATH <- setDataPath();
+  DATA_PATH <- setDataPath(verbose=TRUE);
   load(paste0(DATA_PATH,"081518_NonCF_betas.RData")); #loads allHealthyBetas
   targets <- read.csv(paste0(DATA_PATH,"NonCF_updated_sample_sheet_082018.csv"), stringsAsFactors=FALSE); #overrides targets
   Y_full <- allHealthyBetas; #copy
@@ -69,7 +69,7 @@ Main <- function() {
     iters = ITERS,
     Yfinal = Y_shortened
   ); 
-  print( sapply(RefFree_Array2, deviance, Y=Y_shortened) ); 
+  print(sapply(RefFree_Array2, deviance, Y=Y_shortened)); 
   
   ## Step 3: Determine the optimal number of putative cell types K by bootstrapping:
   RefFree_Boots <- RefFreeCellMixArrayDevianceBoots(
@@ -80,13 +80,14 @@ Main <- function() {
   ); 
   
   ## Export:
+  print("Saving objects...");
   save(
-    list=c("RefFree_Array","RefFree_Array2","RefFree_Boots"),
-    file = paste0(DATA_PATH, "090118_RefFreeEWAS_objects.RData"), 
+    list = c("RefFree_Array","RefFree_Array2","RefFree_Boots"),
+    file = "090118_RefFreeE2_computed_objects.RData", 
     compress = TRUE
   ); 
   
-  print(sessionInfo()); 
+  print(sessionInfo());
   print("*********************Process Complete!*********************");
 }
 

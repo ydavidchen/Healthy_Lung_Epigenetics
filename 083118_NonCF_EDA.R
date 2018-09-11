@@ -24,7 +24,7 @@ targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_082018.csv"), 
 k <- decideNumberOfMostVariable(allHealthyBetas, varThresh=VAR_THRESH, plot=TRUE);
 k
 mat <- selectMostVariableCpGs(allHealthyBetas, k=k);
-stopifnot(identical(colnames(mat), targets$Sample_Name)) #checkpoint
+stopifnot(identical(colnames(mat), targets$Sample_Name)); #checkpoint
 
 #-----------------------------------------PCA-----------------------------------------
 topKsites.pca <- prcomp(t(mat));
@@ -122,8 +122,8 @@ summary(lm(HorvathAge ~ AGE, data=targets));
 cor(targets$HorvathAge, targets$AGE, method="pearson");
 
 label <- expression(atop(
-  'Pearson Corr Coef. ='~0.66,
-  'Adj. R'^2~'='~0.41~', P ='~2.7E-4~", "
+  'Pearson Corr Coef. ='~0.66~',',
+  'Adj. R'^2~'='~0.41~', P ='~2.7E-4
 ));
 
 ggscatter(
