@@ -10,7 +10,7 @@ source("HelperFunctionsForLungEpigen.R");
 library(limma);
 library(matrixStats);
 REDUCED_VAR_THRESH <- VAR_THRESH / 2; #for differential analysis
-EXPORT_PATH <- paste0(DATA_PATH, "limma_DMP_100418");
+EXPORT_PATH <- paste0(DATA_PATH, "limma_DMP_100418/");
 
 constructCustomDesignMatrix <- function(mVals, covarMat) {
   #'@description Generate design matrix & export factor block for paired study design
@@ -49,15 +49,18 @@ fitCustomLimma <- function(mVals, myDesign, myBlock, dupCorrCoef, cpgAnnot, main
   return(DMPs);
 }
 
-main <- function() {
+Main <- function() {
+  print("*********************** Process Begins ***********************");
+  
   ## Load data & annotation:
   load(paste0(DATA_PATH, "081518_NonCF_betas.RData"));
   targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_090118.csv"), stringsAsFactors=FALSE); #frequently updated file
   annot.850kb3 <- loadEPICannotationFile();
-  dir.exists(exportPath)
   
   ## Select most variable CpGs, match samples against annotation, & convert to M-values:
+  png(paste0(EXPORT_PATH,"CpG_universe_variance.png"), height=8.27, width=11.69, units="in", res=200);
   k <- decideNumberOfMostVariable(allHealthyBetas, varThresh=REDUCED_VAR_THRESH, plot=TRUE);
+  dev.off();
   print(paste("Number of CpGs for differential methylation analysis:", k)); 
   betaVals <- selectMostVariableCpGs(allHealthyBetas, k=k);
   if(! identical(colnames(betaVals), targets$Sample_Name)) {
@@ -93,7 +96,9 @@ main <- function() {
   print(sum(DMPs$isSignifAt0.10));
   
   ## Export:
+  write.csv(DMPs, file=paste0(EXPORT_PATH, "100418_NonCF_DMPs.csv"), row.names=FALSE, quote=FALSE);
+  
+  print("*********************** Process Complete! ***********************");
 }
 
-if(! interactive()) main();
-
+if(! interactive()) Main();

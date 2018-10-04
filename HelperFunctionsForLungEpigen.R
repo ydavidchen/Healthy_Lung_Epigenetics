@@ -10,6 +10,7 @@ require(doParallel); registerDoParallel(detectCores()-1);
 #------------------------------------- CONSTANTS & PATHS -------------------------------------
 DATA_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/"; 
 VAR_THRESH <- 0.01;
+MVAl_THRESH <- 0.5; 
 FDR_THRESH <- 0.05;
 
 #------------------------------------- Data Loading Methods -------------------------------------
@@ -91,4 +92,11 @@ myBoxplotTheme <- theme_classic() +
   theme(axis.text.x=element_text(size=20,color="black"), axis.text.y=element_text(size=21,color="black"),
         axis.title.x=element_blank(), axis.title.y=element_text(size=20,color="black"),
         legend.position="top", legend.title=element_text(size=20), legend.text=element_text(size=15,color="black") );
+
+myVolcanoTheme <- theme_classic() +
+  theme(axis.text.x=element_text(color="black",size=16),axis.title.x=element_text(size=21, color="black"), 
+        axis.text.y=element_text(color="black",size=16),axis.title.y=element_text(size=21, color="black"),
+        legend.title=element_blank(), legend.text=element_blank(), legend.position="none"); 
+
+
 
