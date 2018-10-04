@@ -12,12 +12,10 @@ library(matrixStats);
 library(pheatmap); 
 library(tableone);
 library(reshape2);
-library(doParallel); registerDoParallel(detectCores()-1);
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path));
 source("HelperFunctionsForLungEpigen.R");
 
 DATA_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/"; 
-VAR_THRESH <- 0.01; 
 load(paste0(DATA_PATH, "081518_NonCF_betas.RData"));
 targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_090118.csv"), stringsAsFactors=FALSE); #frequently updated file
 

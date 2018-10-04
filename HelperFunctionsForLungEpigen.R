@@ -1,9 +1,18 @@
 # Helper Functions for Lung Epigenetics
 # Author: David Chen
-# Date: 08/15/2018
+# Date: (ongoing)
 # Notes:
+# -- This script consists of 1) universal constants/paths, 2) methods, 3) ggplot2 themes
 
-#------------------------------------- Data Loading Procedures -------------------------------------
+require(ggplot2);
+require(doParallel); registerDoParallel(detectCores()-1);
+
+#------------------------------------- CONSTANTS & PATHS -------------------------------------
+DATA_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/"; 
+VAR_THRESH <- 0.01;
+FDR_THRESH <- 0.05;
+
+#------------------------------------- Data Loading Methods -------------------------------------
 loadEPICannotationFile <- function() {
   #'@description Loas MethylationEPIC 850K annotation as a data.frame
   require(IlluminaHumanMethylationEPICanno.ilm10b3.hg19);
@@ -66,7 +75,6 @@ selectMostVariableCpGs <- function(data, k) {
 }
 
 #------------------------------------- Graphic Themes -------------------------------------
-require(ggplot2);
 myScatterTheme <- theme_classic() + 
   theme(axis.text.x=element_text(size=20,color="black"), axis.title.x=element_text(size=20,color="black"),
         axis.text.y=element_text(size=20,color="black"), axis.title.y=element_text(size=20,color="black"),
