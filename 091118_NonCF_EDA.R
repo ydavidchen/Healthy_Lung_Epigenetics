@@ -58,14 +58,18 @@ heatAnnot <- data.frame(
   RPMM = targets$RPMMClusters,
   stringsAsFactors = FALSE
 );
+heatAnnot$RPMM[heatAnnot$RPMM=="rLL"] <- "A1";
+heatAnnot$RPMM[heatAnnot$RPMM=="rLR"] <- "A2";
+heatAnnot$RPMM[heatAnnot$RPMM=="rRL"] <- "B1";
+heatAnnot$RPMM[heatAnnot$RPMM=="rRR"] <- "B2";
 
 ## CpG annotation:
 rowAnnot <- createCpGTrackingBars(); 
 
 ## Annotation colors:
 annColors <- list(
-  Lobe = c(`RUL`="black", `RLL`="lightgray"),
-  RPMM = c(rLL="black", rLR="gray25", rRL="gray55", rRR="lightgray"),
+  Lobe = c(RUL="black", RLL="lightgray"),
+  RPMM = c(A1="black", A2="gray25", B1="gray55", B2="lightgray"),
   Promoter = c(Yes="black", No="lightgray"),
   Enhancer = c(Yes="black", No="lightgray"),
   Island = c(Yes="black", No="lightgray")
@@ -89,6 +93,13 @@ pheatmap(
   fontsize_col = 8
 )
 
+## Statistical test:
+contTab <- table( 
+  RPMM = ifelse(targets$RPMMClusters %in% c("A1","A2"), "A", "B"),
+  Lobe = targets$LOBE
+);
+contTab <- contTab[c(2,1), c(2,1)];
+contTab
 
 #-----------------------------------------Table One for Patients-----------------------------------------
 targets_rul <- subset(targets, LOBE=="RUL");
