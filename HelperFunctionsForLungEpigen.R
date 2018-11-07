@@ -75,6 +75,29 @@ selectMostVariableCpGs <- function(data, k) {
   return(mat); 
 }
 
+calculateDeltaBetas <- function(betas, group1, group2, g1Name=NULL, g2Name=NULL) {
+  #'@description Calculates mean beta-values by group and then the differences
+  #'@param betas Matrix of beta values. Rows=CpGs, Columns=Samples
+  #'@param group1,group2 String vector of sample (column) names
+  #'@param g1Name,g2Name Optional. Names for `group1`,`group2` columns
+  
+  mean_betas <- data.frame(
+    Name = rownames(betas), 
+    group1 = matrixStats::rowMeans2(betas[ , colnames(betas) %in% group1]),
+    group2 = matrixStats::rowMeans2(betas[ , colnames(betas) %in% group2])
+  );
+  
+  mean_betas$g1_minus_g2 <- mean_betas$group1 - mean_betas$group2;
+  
+  if(! is.null(g1Name) & ! is.null(g2Name)) {
+    colnames(mean_betas)[colnames(mean_betas) == "group1"] <- g1Name;
+    colnames(mean_betas)[colnames(mean_betas) == "group2"] <- g2Name;
+    colnames(mean_betas)[colnames(mean_betas) == "g1_minus_g2"] <- paste(g1Name,"minus",g2Name,sep="_");
+  }
+  
+  return(mean_betas);
+}
+
 #------------------------------------- Graphic Themes -------------------------------------
 myScatterTheme <- theme_classic() + 
   theme(axis.text.x=element_text(size=20,color="black"), axis.title.x=element_text(size=20,color="black"),

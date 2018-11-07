@@ -3,6 +3,7 @@
 # Last update: 10/04/2018
 # Notes:
 # -- Run this script in RStudio
+# -- Recal that RUL has been, and will continue to be, the reference point
 
 rm(list=ls());
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path));
@@ -11,7 +12,11 @@ library(ggrepel);
 library(limma);
 library(matrixStats);
 
-drawLabeledVolcanoPlot <- function(DMPs, pThresh, xThreshDown=-0.01, xThreshUp=0.5) {
+drawLabeledVolcanoPlot <- function(DMPs, pThresh, xThreshDown, xThreshUp) {
+  #'@description Draws volcano plot for differentially methylated CpGs
+  #'@param pThresh Threshold for adjusted P-values
+  #'@param xThreshDown,xThreshUp Thresholds for coloring data points along the x-axis (logFC) dimension
+  
   ## Direction of change:
   DMPs$dir[DMPs$adj.P.Val < pThresh & DMPs$logFC > 0] <- "Positive";
   DMPs$dir[DMPs$adj.P.Val < pThresh & DMPs$logFC < 0] <- "Negative";
@@ -56,13 +61,27 @@ drawLabeledVolcanoPlot <- function(DMPs, pThresh, xThreshDown=-0.01, xThreshUp=0
 }
 
 Main <- function() {
-  load(paste0(DATA_PATH, "081518_NonCF_betas.RData"));
-  targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_090118.csv"), stringsAsFactors=FALSE);
+  ## Results & original data loading:
   DMPs <- read.csv(paste0(DATA_PATH, "limma_DMP_100418/100418_NonCF_DMPs.csv"), stringsAsFactors=FALSE);
+  targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_090118.csv"), stringsAsFactors=FALSE);
+  load(paste0(DATA_PATH, "081518_NonCF_betas.RData"));
   
+  ## Volcano plot:
   png("~/Downloads/Diff_CpGs_in_RUL.png", res=300, units="in", height=8.27, width=11.69);
   drawLabeledVolcanoPlot(DMPs, FDR_THRESH, xThreshDown=-0.5, xThreshUp=0.45);
   dev.off();
+  
+  ## Calculate mean delta beta-values & update DMP spreadsheet:
+  samps_rul <- targets$Sample_Name[targets$LOBE == "RUL"];
+  samps_rll <- targets$Sample_Name[targets$LOBE == "RLL"];
+  stopifnot(all(colnames(allHealthyBetas) %in% c(samps_rul, samps_rll))); #checkpoint
+  meanBetasByGroup <- calculateDeltaBetas(
+    allHealthyBetas,
+    group1=samps_rul, group2=samps_rll, 
+    g1Name="RUL_mean_beta", g2Name="RLL_mean_beta"
+  );
+  dmps_with_delta_beta <- merge(DMPs, meanBetasByGroup, by="Name");
+  write.csv(dmps_with_delta_beta, file="~/Downloads/100418_NonCF_DMPs_with_Mean_Delta_Betas.csv", row.names=FALSE, quote=FALSE);  
 }
 
 Main();
