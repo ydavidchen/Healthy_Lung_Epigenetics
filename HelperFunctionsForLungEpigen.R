@@ -1,11 +1,15 @@
 # Helper Functions for Lung Epigenetics
-# Author: David Chen
+# Script author: David Chen
+# Script maintainer: David Chen
 # Date: (ongoing)
+# Copyright (c) 2018 ydavidchen & Christensen-Lab
 # Notes:
 # -- This script consists of 1) universal constants/paths, 2) methods, 3) ggplot2 themes
 
 require(ggplot2);
 require(doParallel); registerDoParallel(detectCores()-1);
+
+TWO_GROUP_COLORS <- c("royalblue","olivedrab3");  
 
 #------------------------------------- CONSTANTS & PATHS -------------------------------------
 DATA_PATH <- "~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/"; 
@@ -14,6 +18,19 @@ MVAl_THRESH <- 0.5;
 FDR_THRESH <- 0.05;
 
 #------------------------------------- Data Loading Methods -------------------------------------
+load_epigen_data <- function(path="~/Dropbox (Christensen Lab)/Christensen Lab - 2018/NonCF_Healthy_EPIC/healthy_epigendx_validation/190125 EpigenDx Healthy Epic Data.csv",
+                             totalReads=FALSE, dropExtraCols=TRUE) {
+  dat <- data.table::fread(path, stringsAsFactors=FALSE, strip.white=TRUE, data.table=FALSE);
+  if(totalReads) {
+    dat <- subset(dat, Category == "Total Reads")
+  } else {
+    dat <- subset(dat, Category == "Percent Methylation");
+  }
+  dat$Sample_Name <- paste(gsub("-","",dat$Subject, fixed=TRUE), dat$Lobe, sep="_");
+  if(dropExtraCols) dat$Barcode <- dat$`Customer ID` <- dat$`EpigenDx ID` <- dat$DNA_conc <- dat$Tube_label <- dat$Lobe <- dat$Subject <- dat$Category <- NULL;
+  return(dat);
+}
+
 loadEPICannotationFile <- function() {
   #'@description Loas MethylationEPIC 850K annotation as a data.frame
   require(IlluminaHumanMethylationEPICanno.ilm10b3.hg19);
@@ -102,7 +119,7 @@ calculateDeltaBetas <- function(betas, group1, group2, g1Name=NULL, g2Name=NULL)
 myScatterTheme <- theme_classic() + 
   theme(axis.text.x=element_text(size=20,color="black"), axis.title.x=element_text(size=20,color="black"),
         axis.text.y=element_text(size=20,color="black"), axis.title.y=element_text(size=20,color="black"),
-        strip.text.x=element_text(size=12,colour="black",face="bold"),
+        strip.text.x=element_text(size=20,colour="black",face="bold"),
         legend.position="top", legend.title=element_blank(), legend.text=element_text(size=15,color="black")); 
 
 myBarplotTheme <- theme_classic() +
@@ -112,14 +129,13 @@ myBarplotTheme <- theme_classic() +
         legend.position="top",legend.title=element_blank(),legend.text=element_text(size=12,color="black") ); 
 
 myBoxplotTheme <- theme_classic() +
-  theme(axis.text.x=element_text(size=20,color="black"), axis.text.y=element_text(size=21,color="black"),
-        axis.title.x=element_blank(), axis.title.y=element_text(size=20,color="black"),
-        legend.position="top", legend.title=element_text(size=20), legend.text=element_text(size=15,color="black") );
+  theme(axis.text.x=element_text(size=21,color="black"), axis.text.y=element_text(size=21,color="black"),
+        axis.title.x=element_blank(), axis.title.y=element_text(size=22,color="black"),
+        strip.text.x=element_text(size=20,colour="black",face="bold"),
+        legend.position="top", legend.title=element_text(size=20), legend.text=element_text(size=20,color="black") );
 
 myVolcanoTheme <- theme_classic() +
   theme(axis.text.x=element_text(color="black",size=16),axis.title.x=element_text(size=21, color="black"), 
         axis.text.y=element_text(color="black",size=16),axis.title.y=element_text(size=21, color="black"),
         legend.title=element_blank(), legend.text=element_blank(), legend.position="none"); 
-
-
 
