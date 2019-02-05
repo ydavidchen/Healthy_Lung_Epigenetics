@@ -119,6 +119,7 @@ calculateDeltaBetas <- function(betas, group1, group2, g1Name=NULL, g2Name=NULL)
 myScatterTheme <- theme_classic() + 
   theme(axis.text.x=element_text(size=20,color="black"), axis.title.x=element_text(size=20,color="black"),
         axis.text.y=element_text(size=20,color="black"), axis.title.y=element_text(size=20,color="black"),
+        title=element_text(size=20,color="black"),
         strip.text.x=element_text(size=20,colour="black",face="bold"),
         legend.position="top", legend.title=element_blank(), legend.text=element_text(size=15,color="black")); 
 

@@ -2,12 +2,15 @@
 # Script author: David Chen
 # Script maintainer: David Chen
 # Last update: 01/25/2019
-# Copyright (c) 2018 ydavidchen & Christensen-Lab
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 
 rm(list=ls());
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path));
 source("HelperFunctionsForLungEpigen.R");
+library(grid);
+library(lme4);
+library(lmerTest);
 library(matrixStats);
 library(reshape2);
 
@@ -27,7 +30,7 @@ epigen_val <- merge(epigen_val, targets, by="Sample_Name");
 epigen_qual <- merge(epigen_qual, targets, by="Sample_Name");
 
 #---------------------------------- Data visualization ----------------------------------
-## Total reads check:
+## Total reads check (all CpGs):
 plt_qual <- epigen_qual[ , grepl("LOBE", colnames(epigen_qual)) | grepl("CpG", colnames(epigen_qual))]
 plt_qual <- melt(plt_qual, variable.name="CpG", value.name="totalReads");
 ggplot(plt_qual, aes(LOBE, totalReads, color=LOBE)) +
@@ -38,9 +41,23 @@ ggplot(plt_qual, aes(LOBE, totalReads, color=LOBE)) +
   facet_wrap(~ CpG, scales="free_y", nrow=2) +
   myBoxplotTheme;
 
-## % Methylation:
-plt_meth <- epigen_val[ , grepl("LOBE", colnames(epigen_val)) | grepl("CpG", colnames(epigen_val))];
-plt_meth <- melt(plt_meth, variable.name="CpG", value.name="Methylation");
+
+#---------------------------------- Statistical tests ----------------------------------
+## Build independent random-effect models:
+summary(lmer(CpG283 ~ LOBE + AGE + GENDER + CellType_1 + (1 | Subject), data=epigen_val));
+summary(lmer(CpG356 ~ LOBE + AGE + GENDER + CellType_1 + (1 | Subject), data=epigen_val));
+summary(lmer(CpG1141~ LOBE + AGE + GENDER + CellType_1 + (1 | Subject), data=epigen_val));
+summary(lmer(CpG266 ~ LOBE + AGE + GENDER + CellType_1 + (1 | Subject), data=epigen_val));
+
+## Data visualization
+plt_meth <- epigen_val[ , c("LOBE", epigen_cg_annot$EpigenDx_ID)];
+# plt_meth <- epigen_val[ , grepl("LOBE", colnames(epigen_val)) | grepl("CpG", colnames(epigen_val))]; #all
+plt_meth <- melt(plt_meth, value.name="Methylation");
+plt_meth$CpG[plt_meth$variable=="CpG283"] <- "CpG283 \n (p = 0.61)";
+plt_meth$CpG[plt_meth$variable=="CpG356"] <- "CpG356 \n (p = 0.15)";
+plt_meth$CpG[plt_meth$variable=="CpG1141"] <- "CpG1141 \n (p = 5.3e-03 **)";
+plt_meth$CpG[plt_meth$variable=="CpG266"] <- "CpG266 \n (p = 9.8e-04 ***)";
+
 ggplot(plt_meth, aes(LOBE, Methylation, color=LOBE)) +
   geom_boxplot(outlier.colour=NA, outlier.shape=NA) +
   geom_jitter(width=0.25) +
@@ -86,9 +103,25 @@ sele_betas_epic <- sele_betas_epic[ , grepl("cg",colnames(sele_betas_epic)) | gr
 
 plt_scatter_list <- list();
 for(i in 1:nrow(epigen_cg_annot)) {
-  plt_scatter_list[[i]] <- ggplot(sele_betas_epic, aes_string(epigen_cg_annot$EPIC_ID[i], epigen_cg_annot$EpigenDx_ID[i])) +
+  arraySite <- epigen_cg_annot$EPIC_ID[i]; 
+  epigenSite <- epigen_cg_annot$EpigenDx_ID[i]; 
+  
+  ## Correlation coefficient:
+  pearson_i <- round(cor(sele_betas_epic[, arraySite], sele_betas_epic[, epigenSite]), 2);
+  
+  ## Linear regression:
+  fit_i <- lm(sele_betas_epic[,arraySite] ~ sele_betas_epic[,epigenSite]);
+  pval_i <- signif(summary(fit_i)$coefficients[2,4], 3);
+  rsq_i <- round(summary(fit_i)$adj.r.squared, 2);
+  title_i <- paste('Pearson Cor.=',pearson_i, '\n', 'R-squared =',rsq_i, '\n', 'p =',pval_i); 
+  g <- grobTree(textGrob(title_i, x=unit(0.75, "npc"), y=unit(0.25,"npc"), gp = gpar(fontsize=15, col='black'))); 
+  
+  ## Data visualization:
+  plt_scatter_list[[i]] <- ggplot(sele_betas_epic, aes_string(arraySite, epigenSite)) +
     geom_point() +
     geom_smooth(method="lm") +
-    myScatterTheme  
+    myScatterTheme  +
+    annotation_custom(g);
 }
+
 gridExtra::grid.arrange(grobs=plt_scatter_list, ncol=2);
