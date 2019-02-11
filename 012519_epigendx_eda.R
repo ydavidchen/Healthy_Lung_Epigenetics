@@ -107,21 +107,35 @@ for(i in 1:nrow(epigen_cg_annot)) {
   epigenSite <- epigen_cg_annot$EpigenDx_ID[i]; 
   
   ## Correlation coefficient:
-  pearson_i <- round(cor(sele_betas_epic[, arraySite], sele_betas_epic[, epigenSite]), 2);
+  pearson_i <- round(cor(sele_betas_epic[, arraySite], sele_betas_epic[, epigenSite]), 3);
   
   ## Linear regression:
   fit_i <- lm(sele_betas_epic[,arraySite] ~ sele_betas_epic[,epigenSite]);
   pval_i <- signif(summary(fit_i)$coefficients[2,4], 3);
-  rsq_i <- round(summary(fit_i)$adj.r.squared, 2);
+  rsq_i <- round(summary(fit_i)$adj.r.squared, 3);
   title_i <- paste('Pearson Cor.=',pearson_i, '\n', 'R-squared =',rsq_i, '\n', 'p =',pval_i); 
-  g <- grobTree(textGrob(title_i, x=unit(0.75, "npc"), y=unit(0.25,"npc"), gp = gpar(fontsize=15, col='black'))); 
+  g <- grobTree(textGrob(title_i, x=unit(0.7, "npc"), y=unit(0.2,"npc"), gp = gpar(fontsize=15, col='black'))); 
   
   ## Data visualization:
+  if(epigenSite == "CpG283") {
+    yAxisLabel <-  "NR4A1 \n (EpigenDx283)";
+  } else if(epigenSite == "CpG356") {
+    yAxisLabel <- "PDE4D \n (EpigenDx356)";
+  } else if(epigenSite == "CpG1141") {
+    yAxisLabel <- "RUNX2 \n (EpigenDx1141)";
+  } else if(epigenSite == "CpG266") {
+    yAxisLabel <- "A2M \n (EpigenDx266)";
+  } else if(epigenSite == "CpG396") {
+    yAxisLabel <- "CLIP4 (EpigenDx396)";
+  } else if(epigenSite == "CpG1608")
+    yAxisLabel <- "ZFHX3 (EpigenDx1608)";
+  
   plt_scatter_list[[i]] <- ggplot(sele_betas_epic, aes_string(arraySite, epigenSite)) +
     geom_point() +
     geom_smooth(method="lm") +
+    ylab(yAxisLabel) +
     myScatterTheme  +
     annotation_custom(g);
 }
 
-gridExtra::grid.arrange(grobs=plt_scatter_list, ncol=2);
+gridExtra::grid.arrange(grobs=plt_scatter_list, nrow=2);
