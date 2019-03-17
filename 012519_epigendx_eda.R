@@ -92,9 +92,6 @@ epigen_db <- rbind(epigen_db, Median=colMedians(epigen_db), Mean=colMeans2(epige
 # write.csv(epigen_db, file="~/Downloads/013119_Delta_Betas_RUL_minus_RLL.csv", row.names=TRUE, quote=FALSE);
 
 #--------------------------------------  Comparison with EPIC array --------------------------------------
-# SITES <- c("cg26118047","cg17323256","cg06086177","cg16711835","cg13427753","cg00889217");
-# sele_betas_epic <- allHealthyBetas[rownames(allHealthyBetas) %in% SITES, ];
-
 sele_betas_epic <- allHealthyBetas[rownames(allHealthyBetas) %in% epigen_cg_annot$EPIC_ID, ];
 sele_betas_epic <- as.data.frame(t(sele_betas_epic));
 sele_betas_epic$Sample_Name <- rownames(sele_betas_epic);
@@ -126,9 +123,9 @@ for(i in 1:nrow(epigen_cg_annot)) {
   } else if(epigenSite == "CpG266") {
     yAxisLabel <- "A2M \n (EpigenDx266)";
   } else if(epigenSite == "CpG396") {
-    yAxisLabel <- "CLIP4 (EpigenDx396)";
+    yAxisLabel <- "CLIP4 \n (EpigenDx396)";
   } else if(epigenSite == "CpG1608")
-    yAxisLabel <- "ZFHX3 (EpigenDx1608)";
+    yAxisLabel <- "ZFHX3 \n (EpigenDx1608)";
   
   plt_scatter_list[[i]] <- ggplot(sele_betas_epic, aes_string(arraySite, epigenSite)) +
     geom_point() +
@@ -138,4 +135,6 @@ for(i in 1:nrow(epigen_cg_annot)) {
     annotation_custom(g);
 }
 
+## Individual adjustment
+plt_scatter_list[[6]] <- plt_scatter_list[[6]] + scale_x_continuous(breaks=seq(0.35,0.55,by=0.1));
 gridExtra::grid.arrange(grobs=plt_scatter_list, nrow=2);

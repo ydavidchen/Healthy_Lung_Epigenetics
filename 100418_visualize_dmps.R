@@ -12,16 +12,19 @@ library(ggrepel);
 library(limma);
 library(matrixStats);
 
-drawLabeledVolcanoPlot <- function(DMPs, pThresh, xThreshDown, xThreshUp) {
+drawLabeledVolcanoPlot <- function(DMPs, pThresh=FDR_THRESH, xThreshDown=-0.5, xThreshUp=0.45) {
   #'@description Draws volcano plot for differentially methylated CpGs
   #'@param pThresh Threshold for adjusted P-values
   #'@param xThreshDown,xThreshUp Thresholds for coloring data points along the x-axis (logFC) dimension
+  
+  DMPs$negLog10Pval <- -log10(DMPs$adj.P.Val); 
   
   ## Direction of change:
   DMPs$dir[DMPs$adj.P.Val < pThresh & DMPs$logFC > 0] <- "Positive";
   DMPs$dir[DMPs$adj.P.Val < pThresh & DMPs$logFC < 0] <- "Negative";
   DMPs$dir[is.na(DMPs$dir)] <- "";
   
+  ## Numbers to label:
   nPos <- sum(DMPs$dir == "Positive", na.rm=TRUE);
   nNeg <- sum(DMPs$dir == "Negative", na.rm=TRUE);
   
@@ -40,10 +43,23 @@ drawLabeledVolcanoPlot <- function(DMPs, pThresh, xThreshDown, xThreshUp) {
     }
   }
   DMPs$Label <- DMPs$Gene;
+  
+  ## First pass for gene labels: systematically remove genes taht didn't meet threshold:
   DMPs$Label[(DMPs$logFC <= xThreshUp & DMPs$logFC >= xThreshDown) | DMPs$adj.P.Val >= pThresh] <- NA; #higher threshold for gene labeling
   
-  ## Plot:
-  plt <- ggplot(DMPs, aes(x=logFC, y=-log10(adj.P.Val), color=dir)) +
+  ## Second pass for gene labels: manually add back or further remove labels as requested:
+  boolAddBack <- DMPs$Gene %in% c("NR4A1","CLIP4","RUNX2","SNX10","SCNN1A") & DMPs$adj.P.Val < pThresh; 
+  boolAddBack <- boolAddBack | DMPs$negLog10Pval >= 2; #a few more points
+  DMPs$Label[boolAddBack] <- DMPs$Gene[boolAddBack];
+  
+  boolFurtherRemove <- DMPs$Gene %in% c("NFATC3","GFOD1","DENND1A");
+  DMPs$Label[boolFurtherRemove] <- NA; 
+  
+  ## Third pass for gene labels: simplify/reformat view on plot:
+  DMPs$Label <- gsub("; CMSS1; FILIP1L", "", DMPs$Label);
+  DMPs$Label <- gsub("; RNF103-CHMP3", "", DMPs$Label);
+  
+  plt <- ggplot(DMPs, aes(x=logFC, y=negLog10Pval, color=dir)) +
     geom_point(aes(size=dir, alpha=dir)) + #override
     scale_x_continuous(expand=c(0,0), limits=c(-1.75,1.75), breaks=seq(-1.5,1.5,by=0.5)) +
     scale_color_manual(values = c("gray","royalblue","olivedrab3")) +
@@ -57,14 +73,13 @@ drawLabeledVolcanoPlot <- function(DMPs, pThresh, xThreshDown, xThreshUp) {
     annotate("text",-1,3,label=paste(nNeg,"HYPOmethyl. \n in RUL"),size=5,color="royalblue") +
     myVolcanoTheme;
   
-  print(plt);
+  return(plt);
 }
 
 Main <- function() {
   ## Results & original data loading:
   DMPs <- read.csv(paste0(DATA_PATH, "limma_DMP_100418/100418_NonCF_DMPs.csv"), stringsAsFactors=FALSE);
-  targets <- read.csv(paste0(DATA_PATH, "NonCF_updated_sample_sheet_090118.csv"), stringsAsFactors=FALSE);
-  load(paste0(DATA_PATH, "081518_NonCF_betas.RData"));
+  # targets <- load_most_recent_covar(); #override original target
   
   ## Volcano plot:
   png("~/Downloads/Diff_CpGs_in_RUL.png", res=300, units="in", height=8.27, width=11.69);
