@@ -79,7 +79,6 @@ drawLabeledVolcanoPlot <- function(DMPs, pThresh=FDR_THRESH, xThreshDown=-0.5, x
 Main <- function() {
   ## Results & original data loading:
   DMPs <- read.csv(paste0(DATA_PATH, "limma_DMP_100418/100418_NonCF_DMPs.csv"), stringsAsFactors=FALSE);
-  # targets <- load_most_recent_covar(); #override original target
   
   ## Volcano plot:
   png("~/Downloads/Diff_CpGs_in_RUL.png", res=300, units="in", height=8.27, width=11.69);

@@ -83,6 +83,7 @@ annColors <- list(
 rpmmOrderedSubjecIds <- targets$Subject_ID[order(targets$RPMMSampleOrder)];
 mat4Heat <- mat4Heat[ , match(rpmmOrderedSubjecIds, colnames(mat4Heat))]; 
 
+png("~/Downloads/Figure1_nonCF_heatmap.png", res=300, units="in", height=8.27, width=11.69);
 pheatmap(
   mat4Heat,
   show_rownames = FALSE,
@@ -98,6 +99,7 @@ pheatmap(
   fontsize = 12,
   fontsize_col = 8
 )
+dev.off();
 
 ## Examine association between RPMM cluster A vs. Upper Lobe:
 contTab <- table(
@@ -113,6 +115,7 @@ plt_cellType$variable <- gsub("CellType_1", "Cell Type 1", plt_cellType$variable
 plt_cellType$variable <- gsub("CellType_2", "Cell Type 2", plt_cellType$variable);
 plt_cellType$Lobe <- factor(plt_cellType$Lobe, levels=c("Upper","Lower"));
 
+png("~/Downloads/Figure2_Cell_type.png", res=300, units="in", height=8.27, width=11.69);
 ggplot(plt_cellType, aes(x=variable, y=value, color=Lobe)) +
   geom_boxplot(outlier.colour=NA, outlier.fill=NA, outlier.shape=NA) +
   geom_point(position=position_jitterdodge(jitter.width=0.25)) +
@@ -120,6 +123,7 @@ ggplot(plt_cellType, aes(x=variable, y=value, color=Lobe)) +
   scale_y_continuous(limits=c(0, 1.05)) +
   labs(y="Proportion") +
   myBoxplotTheme;
+dev.off();
 
 #-----------------------------------------Table One for Patients-----------------------------------------
 generate_table_one <- function() {

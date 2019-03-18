@@ -22,18 +22,21 @@ load_most_recent_covar <- function(path=paste0(DATA_PATH, "NonCF_updated_sample_
   targets <- read.csv(path, stringsAsFactors=FALSE); #frequently updated file
   
   ## Assign IDs to healthy sample contributors:
-  targets$Subject_ID[targets$Subject=="AE-106"] <- 1;
-  targets$Subject_ID[targets$Subject=="BRW-110"] <- 2; 
-  targets$Subject_ID[targets$Subject=="CK-90"] <- 3; 
-  targets$Subject_ID[targets$Subject=="CP-83"] <- 4;
-  targets$Subject_ID[targets$Subject=="DC-93"] <- 5;
-  targets$Subject_ID[targets$Subject=="MAP-88"] <- 6;
-  targets$Subject_ID[targets$Subject=="RAH-72"] <- 7;
-  targets$Subject_ID[targets$Subject=="RB-95"] <- 8;
-  targets$Subject_ID[targets$Subject=="SAA-87"] <- 9;
-  targets$Subject_ID[targets$Subject=="SAT-108"] <- 10;
-  targets$Subject_ID[targets$Subject=="SH-96"] <- 11;
-  targets$Subject_ID[targets$Subject=="TG-84"] <- 12;
+  targets$Subject_ID[targets$Subject=="RAH-72"] <- 1;
+  targets$Subject_ID[targets$Subject=="MAP-88"] <- 2;
+  targets$Subject_ID[targets$Subject=="SH-96"] <- 3;
+  targets$Subject_ID[targets$Subject=="SRH-70"] <- 4;
+  targets$Subject_ID[targets$Subject=="CP-83"] <- 5;
+  targets$Subject_ID[targets$Subject=="CK-90"] <- 6; 
+  targets$Subject_ID[targets$Subject=="SAA-87"] <- 7;
+  targets$Subject_ID[targets$Subject=="TG-84"] <- 8;
+  targets$Subject_ID[targets$Subject=="DC-93"] <- 9;
+  targets$Subject_ID[targets$Subject=="BRW-110"] <- 10; 
+  targets$Subject_ID[targets$Subject=="RB-95"] <- 11;
+  targets$Subject_ID[targets$Subject=="AE-106"] <- 12;
+  targets$Subject_ID[targets$Subject=="SAT-108"] <- 13;
+
+  stopifnot(all(table(targets$Subject_ID) == 2)); #checkpoint
   
   ## Assign better RPMM names:
   targets$RPMM[targets$RPMMClusters=="rLL"] <- "A1";
@@ -44,10 +47,6 @@ load_most_recent_covar <- function(path=paste0(DATA_PATH, "NonCF_updated_sample_
   ## Assign better Lobe names
   targets$Lobe[targets$LOBE=="RUL"] <- "Upper";
   targets$Lobe[targets$LOBE=="RLL"] <- "Lower";
-  
-  ## Code in the subject from the CF paper as the last:
-  targets$Subject_ID[targets$Subject=="SRH-70"] <- 13;
-  stopifnot(all(table(targets$Subject_ID) == 2)); #checkpoint
   
   targets$Subject_ID <- paste(targets$LOBE, targets$Subject_ID, sep="_");
   # targets$RPMMClusters <- targets$LOBE <- NULL;
