@@ -1,0 +1,15 @@
+language: R
+
+os:
+  - osx
+
+r:
+  - "3.3"
+  - "3.4"
+  - "3.5"
+
+install:
+  - Rscript -e 'install.packages(c("ggplot2","doParallel"))'
+
+script:
+  - Rscript src/HelperFunctionsForLungEpigen.R
