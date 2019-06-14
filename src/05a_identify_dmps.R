@@ -1,6 +1,7 @@
 # Differential Methylation Analysis by Lung Lobes
 # Author: David Chen
 # Last update: 10/04/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 # -- Run this script as a program in Linux: Rscript <script-name>
 

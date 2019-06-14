@@ -1,6 +1,7 @@
 # Assembling minfi sample sheet for QC
 # Script author: David Chen
-# Date: 08/15/2018; 08/17/2018
+# Dates: 08/15/2018; 08/17/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 
 rm(list=ls());

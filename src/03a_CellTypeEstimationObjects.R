@@ -1,8 +1,9 @@
 # Cell Type Deconvolution of Non-CF Healthy BAL: RefFreeEWAS Objects
-# Author: David Chen
-# Reference: Way, Titus, Johnson, Christensen
+# Script author: David Chen
 # Date: 09/01/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
+# -- Method/Code reference: Way, Titus, Johnson, Christensen
 # -- Upload DNAm RData, targets CSV & this script to Linux cluster (e.g. Discovery or Andes-Polaris)
 # -- Use a PBS script or `nohup Rscript <this-script.R> &;`
 

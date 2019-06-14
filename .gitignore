@@ -1,4 +1,7 @@
 data/
+results/
+geo_submissions/
+
 .DS_Store
 .DS_Store?
 .Rhistory

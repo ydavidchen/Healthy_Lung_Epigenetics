@@ -2,7 +2,9 @@
 # Author: David Chen
 # Reference: Way, Titus, Johnson, Christensen
 # Date: 09/01/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
+# -- Method/Code reference: Way, Titus, Johnson, Christensen
 # -- Continuation of RefFree cell-type estimation done in Linux cluster
 
 rm(list=ls());

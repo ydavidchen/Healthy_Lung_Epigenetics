@@ -1,6 +1,7 @@
 # RPMM on Non-CF Samples and Update Sample Annotations
-# David Chen
-# 08/20/2018
+# Script author: David Chen
+# Date: 08/20/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 
 rm(list=ls());

@@ -1,6 +1,7 @@
 # Visualize DMPs in RUL
 # Author: David Chen
 # Last update: 10/04/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 # -- Run this script in RStudio
 # -- Recal that RUL has been, and will continue to be, the reference point
@@ -62,6 +63,7 @@ drawLabeledVolcanoPlot <- function(DMPs, pThresh=FDR_THRESH, xThreshDown=-0.5, x
   plt <- ggplot(DMPs, aes(x=logFC, y=negLog10Pval, color=dir)) +
     geom_point(aes(size=dir, alpha=dir)) + #override
     scale_x_continuous(expand=c(0,0), limits=c(-1.75,1.75), breaks=seq(-1.5,1.5,by=0.5)) +
+    scale_y_continuous(limits=c(0,2.5)) +
     scale_color_manual(values = c("gray","royalblue","olivedrab3")) +
     scale_size_manual(values=c(1, 1.1, 1.1)) +
     scale_alpha_manual(values=c(0.9, 1, 1)) +
@@ -69,8 +71,8 @@ drawLabeledVolcanoPlot <- function(DMPs, pThresh=FDR_THRESH, xThreshDown=-0.5, x
     geom_hline(yintercept=-log10(pThresh), linetype="dashed") +
     geom_vline(xintercept=0, linetype="dashed") +
     labs(x="log2FC(M-value)", y="-log10(FDR)") +
-    annotate("text",1,3, label=paste(nPos,"HYPERmethyl. \n in RUL"),size=5,color="olivedrab3") +
-    annotate("text",-1,3,label=paste(nNeg,"HYPOmethyl. \n in RUL"),size=5,color="royalblue") +
+    annotate("text",1.25,2, label=paste(nPos,"HYPERmethyl. \n in RUL"),size=7,color="olivedrab3") +
+    annotate("text",-1.25,2,label=paste(nNeg,"HYPOmethyl. \n in RUL"),size=7,color="royalblue") +
     myVolcanoTheme;
   
   return(plt);
@@ -81,7 +83,7 @@ Main <- function() {
   DMPs <- read.csv(paste0(DATA_PATH, "limma_DMP_100418/100418_NonCF_DMPs.csv"), stringsAsFactors=FALSE);
   
   ## Volcano plot:
-  png("~/Downloads/Diff_CpGs_in_RUL.png", res=300, units="in", height=8.27, width=11.69);
+  png("~/Downloads/Figure3_Diff_CpGs_in_RUL.png", res=300, units="in", height=8.27, width=11.69);
   drawLabeledVolcanoPlot(DMPs, FDR_THRESH, xThreshDown=-0.5, xThreshUp=0.45);
   dev.off();
   

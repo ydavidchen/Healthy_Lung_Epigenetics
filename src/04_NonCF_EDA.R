@@ -1,6 +1,7 @@
 # Exploratory Data Analysis (EDA) of Healthy BAL DNAm
 # Author: David Chen
 # Last update: 03/17/2019
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 # -- This file is dedicated for EDA and is frequently updated
 

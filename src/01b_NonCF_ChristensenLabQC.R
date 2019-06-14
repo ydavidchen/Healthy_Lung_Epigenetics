@@ -1,6 +1,7 @@
 # Functional Implementation of Christensen Lab Minfi & ENmix QC
 # Script author: David Chen
 # Date: 08/15/2018
+# Copyright (c) 2018-19 ydavidchen & Christensen-Lab
 # Notes:
 
 rm(list=ls());
